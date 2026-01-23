@@ -1,6 +1,7 @@
 const port = 3005;
 const atype_list = [256, 192, 128, 96, 48];
-const mytoken = 'homeassistant'; // 보안을 위해 필요시 변경하세요
+const atype_names = ["256k (고음질)", "192k (표준)", "128k (절약)", "96k (낮음)", "48k (터널용)"];
+const mytoken = 'homeassistant'; 
 const http = require('http');
 const url = require("url");
 const child_process = require("child_process");
@@ -9,7 +10,6 @@ const axios = require('axios');
 
 // 라디오 리스트 로드
 const data = JSON.parse(fs.readFileSync('/app/radio-list.json', 'utf8'));
-
 const instance = axios.create({ timeout: 5000 });
 
 function return_pipe(urls, resp, req) {
@@ -29,9 +29,8 @@ function return_pipe(urls, resp, req) {
     ]);
 
     xffmpeg.stdout.pipe(resp);
-    console.log(`[Radio] New Stream Started (PID: ${xffmpeg.pid})`);
+    console.log(`[Radio] Stream Started: ${atype_list[atype]}k (PID: ${xffmpeg.pid})`);
 
-    // 클라이언트 접속 종료 시 FFmpeg 확실히 종료 (중요: HAOS 17 좀비 프로세스 방지)
     req.on("close", () => {
         if (xffmpeg) {
             console.log(`[Radio] Connection Closed (PID: ${xffmpeg.pid})`);
@@ -46,7 +45,7 @@ const liveServer = http.createServer((req, resp) => {
     const urlParts = url.parse(req.url, true);
     const { pathname, query } = urlParts;
 
-    // 1. Web UI 메인 화면 (브라우저 접속 시)
+    // 1. Web UI 메인 화면
     if (pathname === "/") {
         resp.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
         const channelButtons = Object.keys(data).map(key => 
@@ -63,39 +62,73 @@ const liveServer = http.createServer((req, resp) => {
                     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; 
                            background-color: #1a1a1a; color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; }
                     .container { max-width: 500px; width: 100%; text-align: center; }
-                    h2 { color: #03a9f4; margin-bottom: 30px; }
+                    h2 { color: #03a9f4; margin-bottom: 20px; }
+                    
+                    /* 음질 선택 섹션 */
+                    .settings-box { background: #222; padding: 15px; border-radius: 10px; margin-bottom: 20px; width: 100%; text-align: left; }
+                    .settings-label { font-size: 0.8em; color: #888; margin-bottom: 8px; display: block; }
+                    select { width: 100%; padding: 12px; background: #333; color: white; border: 1px solid #444; border-radius: 5px; font-size: 1rem; cursor: pointer; }
+                    
                     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 30px; }
                     .channel-btn { background: #333; border: 1px solid #444; color: white; padding: 15px; 
                                    border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
                     .channel-btn:hover { background: #03a9f4; border-color: #03a9f4; }
                     .channel-btn.active { background: #ff9800; border-color: #ff9800; }
-                    .player-box { background: #222; padding: 20px; border-radius: 15px; position: sticky; bottom: 20px; width: 100%; box-shadow: 0 -5px 15px rgba(0,0,0,0.5); }
+                    
+                    .player-box { background: #222; padding: 20px; border-radius: 15px; position: sticky; bottom: 20px; width: 100%; box-shadow: 0 -5px 15px rgba(0,0,0,0.5); box-sizing: border-box; }
                     audio { width: 100%; margin-top: 10px; }
                     #status { font-size: 0.9em; color: #888; margin-bottom: 5px; }
                 </style>
             </head>
             <body>
                 <div class="container">
-                    <h2>📻 Korea Radio Player</h2>
+                    <h2>📻 Korea Radio</h2>
+                    
+                    <div class="settings-box">
+                        <span class="settings-label">스트리밍 음질 선택</span>
+                        <select id="quality">
+                            ${atype_names.map((name, i) => `<option value="${i}">${name}</option>`).join('')}
+                        </select>
+                    </div>
+
                     <div class="grid">${channelButtons}</div>
                 </div>
+
                 <div class="player-box">
                     <div id="status">채널을 선택하세요</div>
                     <audio id="audio" controls autoplay></audio>
                 </div>
+
                 <script>
                     const audio = document.getElementById('audio');
                     const status = document.getElementById('status');
+                    const quality = document.getElementById('quality');
+                    let currentKey = '';
+
                     function play(key) {
-                        // 현재 버튼 활성화 표시
+                        currentKey = key;
                         document.querySelectorAll('.channel-btn').forEach(btn => btn.classList.remove('active'));
-                        event.target.classList.add('active');
                         
-                        const streamUrl = "radio?token=${mytoken}&keys=" + key;
-                        status.innerText = "재생 중: " + key.toUpperCase();
+                        // 클릭된 버튼 강조 (이벤트 타겟이 버튼일 경우)
+                        if(event && event.target.classList.contains('channel-btn')) {
+                            event.target.classList.add('active');
+                        } else {
+                            // 음질 변경 등으로 자동 재호출 시 버튼 활성화 유지
+                            const btns = document.querySelectorAll('.channel-btn');
+                            btns.forEach(b => { if(b.innerText.toLowerCase() === key.toLowerCase()) b.classList.add('active'); });
+                        }
+                        
+                        const atype = quality.value;
+                        const streamUrl = "radio?token=${mytoken}&keys=" + key + "&atype=" + atype;
+                        
+                        const qText = quality.options[quality.selectedIndex].text;
+                        status.innerText = "재생 중: " + key.toUpperCase() + " [" + qText + "]";
                         audio.src = streamUrl;
                         audio.play();
                     }
+
+                    // 음질 변경 시 즉시 재접속
+                    quality.onchange = () => { if(currentKey) play(currentKey); };
                 </script>
             </body>
             </html>
@@ -103,11 +136,12 @@ const liveServer = http.createServer((req, resp) => {
         return;
     }
 
+    // 2. 라디오 스트리밍 로직
     if (pathname === "/radio" && query['token'] === mytoken) {
         const key = query['keys'];
         if (key && data[key]) {
             const myData = data[key];
-            console.log(`[Request] Channel: ${key}`);
+            console.log(`[Request] Channel: ${key} | Quality Index: ${query['atype'] || 0}`);
 
             if (myData === "kbs_lib") {
                 getkbs(key).then(url => url !== 'invaild' ? return_pipe(url, resp, req) : errorOut(resp));
@@ -132,7 +166,7 @@ function errorOut(resp, msg = "Error") {
     resp.end(msg);
 }
 
-// --- 방송사 파서 함수들 (기존 로직 유지) ---
+// --- 방송사 파서 함수들 ---
 async function getkbs(param) {
     const kbs_ch = { 'kbs_1radio': '21', 'kbs_3radio': '23', 'kbs_classic': '24', 'kbs_cool': '25', 'kbs_happy': '22' };
     try {
@@ -160,6 +194,3 @@ async function getsbs(ch) {
 }
 
 liveServer.listen(port, '0.0.0.0', () => console.log(`Korea Radio Server running on port ${port}`));
-
-
-
