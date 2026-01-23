@@ -97,8 +97,7 @@ const liveServer = http.createServer((req, resp) => {
                     <div class="settings-box">
                         <span class="settings-label">스트리밍 음질 선택</span>
                         <select id="quality">
-                            ${atype_names.map((name, i) => 
-                                `<option value="${i}" ${i === 2 ? 'selected' : ''}>${name}</option>`).join('')}
+                            ${atype_names.map((name, i) => `<option value="${i}" ${i === 2 ? 'selected' : ''}>${name}</option>`).join('')}
                         </select>
                     </div>
 
@@ -224,6 +223,7 @@ async function getsbs(ch) {
 }
 
 liveServer.listen(port, '0.0.0.0', () => console.log(`Korea Radio Server running on port ${port}`));
+
 
 
 
