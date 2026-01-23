@@ -14,25 +14,33 @@ const instance = axios.create({ timeout: 5000 });
 
 function return_pipe(urls, resp, req) {
     const urlParts = url.parse(req.url, true);
-    // 괄호 오류 수정 및 기본값 2(128k) 설정
+    
+    // 1. 음질 인덱스 결정 (파라미터 없으면 기본값 2 = 128k / atype_names[2] = '절약')
     const atype = urlParts.query["atype"] !== undefined ? Number(urlParts.query["atype"]) : 2;
     const bitrate = atype_list[atype] || 128;
 
+    // 2. FFmpeg 실행 (AAC 코덱 + 데이터 절약 설정)
     const xffmpeg = child_process.spawn("ffmpeg", [
         "-headers", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "-loglevel", "error",
+        "-re", 
         "-i", urls,
-        "-c:a", "mp3",
-        "-b:a", (atype_list[atype] || 128) + "k",
-        "-ar", "44100",
-        "-ac", "2",
-        "-f", "wav",
+        "-c:a", "aac",           // 고효율 AAC 코덱
+        "-b:a", bitrate + "k",    // 선택된 비트레이트 (기본 128k)
+        "-ac", "2",              // 스테레오 유지
+        "-ar", "44100",          // 표준 샘플링 레이트
+        "-movflags", "frag_keyframe+empty_moov", // 스트리밍 필수 옵션
+        "-f", "adts",            // AAC 스트리밍 표준 포맷
         "pipe:1"
     ]);
 
+    // 3. 응답 헤더 설정 (브라우저/앱 인식용)
+    resp.writeHead(200, { 'Content-Type': 'audio/aac' });
     xffmpeg.stdout.pipe(resp);
-    console.log(`[Radio] Stream Started: ${atype_list[atype]}k (PID: ${xffmpeg.pid})`);
 
+    // 4. 로그 출력 (보내주신 변수명 atype_list 사용)
+    console.log(`[Radio] AAC Stream Started: ${atype_list[atype]}k (PID: ${xffmpeg.pid})`);
+
+    // 5. 연결 종료 및 에러 처리
     req.on("close", () => {
         if (xffmpeg) {
             console.log(`[Radio] Connection Closed (PID: ${xffmpeg.pid})`);
@@ -216,6 +224,7 @@ async function getsbs(ch) {
 }
 
 liveServer.listen(port, '0.0.0.0', () => console.log(`Korea Radio Server running on port ${port}`));
+
 
 
 
