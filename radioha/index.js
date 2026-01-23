@@ -12,7 +12,7 @@ const axios = require('axios');
 const data = JSON.parse(fs.readFileSync('/app/radio-list.json', 'utf8'));
 const instance = axios.create({ timeout: 5000 });
 
-function return_pipe(urls, resp, req) {
+function return_pipe(urls, resp, req, refererUrl = "https://mini.imbc.com/") {
     const urlParts = url.parse(req.url, true);
     
     // 1. 음질 인덱스 결정 (파라미터 없으면 기본값 2 = 128k / atype_names[2] = '절약')
@@ -22,7 +22,7 @@ function return_pipe(urls, resp, req) {
     // 2. FFmpeg 실행 (AAC 코덱 + 데이터 절약 설정)
     const xffmpeg = child_process.spawn("ffmpeg", [
         "-protocol_whitelist", "file,http,https,tcp,tls,crypto",
-        "-headers", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\r\nReferer: https://wbsradio.kr/\r\n",
+        "-headers", `User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\r\nReferer: ${refererUrl}\r\n`,
         "-re", 
         "-fflags", "+genpts",
         "-i", urls,
@@ -161,6 +161,12 @@ const liveServer = http.createServer((req, resp) => {
                 getsbs(key).then(url => url !== 'invaild' ? return_pipe(url, resp, req) : errorOut(resp));
             } else if (myData === "mbc_lib") {
                 getmbc(key).then(url => url !== 'invaild' ? return_pipe(url, resp, req) : errorOut(resp));
+            } else if (key === "wbsfm") {
+            // WBS 전용 리퍼러 적용
+                return_pipe(myData, resp, req, "https://wbsradio.kr/");
+            } else if (key === "kfn") {
+            // KFN 전용 리퍼러 적용
+                return_pipe(myData, resp, req, "https://radio.kfn.miracom.pro/");
             } else {
                 return_pipe(myData, resp, req);
             }
@@ -233,6 +239,7 @@ async function getsbs(ch) {
 }
 
 liveServer.listen(port, '0.0.0.0', () => console.log(`Korea Radio Server running on port ${port}`));
+
 
 
 
