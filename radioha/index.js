@@ -65,19 +65,19 @@ const liveServer = http.createServer((req, resp) => {
                     h2 { color: #03a9f4; margin-bottom: 20px; }
                     
                     /* 음질 선택 섹션 */
-                    .settings-box { background: #222; padding: 15px; border-radius: 10px; margin-bottom: 20px; width: 100%; text-align: left; }
+                    .settings-box { background: #222; padding: 12px; border-radius: 10px; margin-bottom: 15px; width: 100%; box-sizing: border-box; text-align: left; }
                     .settings-label { font-size: 0.8em; color: #888; margin-bottom: 8px; display: block; }
-                    select { width: 100%; padding: 12px; background: #333; color: white; border: 1px solid #444; border-radius: 5px; font-size: 1rem; cursor: pointer; }
+                    select { width: 100%; padding: 10px; background: #333; color: white; border: 1px solid #444; border-radius: 6px; font-size: 0.95rem; cursor: pointer; box-sizing: border-box; }
                     
-                    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 30px; }
-                    .channel-btn { background: #333; border: 1px solid #444; color: white; padding: 15px; 
-                                   border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+                    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 30px; width: 100%; }
+                    .channel-btn { background: #333; border: 1px solid #444; color: white; padding: 15px 5px; 
+                                   border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 0.9rem;}
                     .channel-btn:hover { background: #03a9f4; border-color: #03a9f4; }
                     .channel-btn.active { background: #ff9800; border-color: #ff9800; }
                     
                     .player-box { background: #222; padding: 20px; border-radius: 15px; position: sticky; bottom: 20px; width: 100%; box-shadow: 0 -5px 15px rgba(0,0,0,0.5); box-sizing: border-box; }
                     audio { width: 100%; margin-top: 10px; }
-                    #status { font-size: 0.9em; color: #888; margin-bottom: 5px; }
+                    #status { font-size: 0.85em; color: #aaa; margin-bottom: 5px; height: 1.2em; }
                 </style>
             </head>
             <body>
@@ -194,3 +194,4 @@ async function getsbs(ch) {
 }
 
 liveServer.listen(port, '0.0.0.0', () => console.log(`Korea Radio Server running on port ${port}`));
+
