@@ -14,7 +14,7 @@ const instance = axios.create({ timeout: 5000 });
 
 function return_pipe(urls, resp, req) {
     const urlParts = url.parse(req.url, true);
-    const atype = Number(urlParts.query["atype"] || 0);
+    const atype = Number(urlParts.query["atype"] !== undefined ? Number(urlParts.query["atype"]) : 2;
 
     const xffmpeg = child_process.spawn("ffmpeg", [
         "-headers", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -213,5 +213,6 @@ async function getsbs(ch) {
 }
 
 liveServer.listen(port, '0.0.0.0', () => console.log(`Korea Radio Server running on port ${port}`));
+
 
 
