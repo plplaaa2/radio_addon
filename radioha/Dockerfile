@@ -1,23 +1,18 @@
-# 1. HA 공식 베이스 이미지 사용
+# 베이스 이미지
 ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:latest
 FROM ${BUILD_FROM}
 
-# 2. 필수 패키지 설치
-RUN apk add --no-cache \
-    nodejs \
-    npm \
-    ffmpeg \
-    tzdata
+# 패키지 설치
+RUN apk add --no-cache nodejs npm ffmpeg tzdata
 
-# 3. 작업 디렉토리 및 파일 복사
+# 작업 디렉토리
 WORKDIR /app
+
+# 패키지 및 소스 복사
 COPY package.json ./
 RUN npm install --production
-COPY index.js radio-list.json run.sh ./
+COPY index.js radio-list.json ./
 
-# 4. 실행 권한 부여
-RUN chmod a+x /app/run.sh
-
-# 5. [중요] ENTRYPOINT를 절대 사용하지 마세요. 
-# 대신 CMD를 사용하여 run.sh를 호출합니다.
-CMD [ "/app/run.sh" ]
+# [해결 핵심] S6 관리자를 우회하지 않고, 
+# HA 애드온 시스템이 권장하는 방식으로 직접 실행합니다.
+CMD [ "node", "/app/index.js" ]
