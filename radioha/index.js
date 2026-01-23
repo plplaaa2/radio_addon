@@ -8,7 +8,7 @@ const fs = require('fs');
 const axios = require('axios');
 
 // 라디오 리스트 로드
-const data = JSON.parse(fs.readFileSync('./radio-list.json', 'utf8'));
+const data = JSON.parse(fs.readFileSync('/app/radio-list.json', 'utf8'));
 
 const instance = axios.create({ timeout: 5000 });
 
@@ -103,3 +103,4 @@ async function getsbs(ch) {
 }
 
 liveServer.listen(port, '0.0.0.0', () => console.log(`Korea Radio Server running on port ${port}`));
+
