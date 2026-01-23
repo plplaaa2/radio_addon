@@ -3,7 +3,7 @@
 	"tbsfm" : "https://cdnfm.tbs.seoul.kr/tbs/_definst_/tbs_fm_web_360.smil/playlist.m3u8",	
 	"tbnfm" : "https://5cc6beb04faf6.streamlock.net/gyeongin/myStream/playlist.m3u8",
 	"ifm" : "https://stream.ifm.kr/live/aod1/playlist.m3u8",
-	"kfn" : https://mediaworks.dema.mil.kr/live_edge/audio.sdp/playlist.m3u8",
+	"kfn" : "https://mediaworks.dema.mil.kr/live_edge/audio.sdp/playlist.m3u8",
 	"obsfm" : "https://vod3.obs.co.kr:444/live/obsstream1/radio.stream/playlist.m3u8",
 	"ebsfm" : "https://ebsonair.ebs.co.kr/fmradiofamilypc/familypc1m/playlist.m3u8",
 	"cbs_music_fm" : "https://m-aac.cbs.co.kr/mweb_cbs939/_definst_/cbs939.stream/playlist.m3u8",
@@ -18,4 +18,5 @@
 	"mbc_fm" : "mbc_lib",
 	"mbc_fm4u" : "mbc_lib"	
 }
+
 
