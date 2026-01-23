@@ -23,6 +23,7 @@ function return_pipe(urls, resp, req) {
     const xffmpeg = child_process.spawn("ffmpeg", [
         "-headers", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "-re", 
+        "-fflags", "+genpts",
         "-i", urls,
         "-c:a", "aac",           // 고효율 AAC 코덱
         "-b:a", bitrate + "k",    // 선택된 비트레이트 (기본 128k)
@@ -231,6 +232,7 @@ async function getsbs(ch) {
 }
 
 liveServer.listen(port, '0.0.0.0', () => console.log(`Korea Radio Server running on port ${port}`));
+
 
 
 
