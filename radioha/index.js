@@ -180,9 +180,28 @@ async function getkbs(param) {
 async function getmbc(ch) {
     const mbc_ch = { 'mbc_fm4u': 'mfm', 'mbc_fm': 'sfm' };
     try {
-        const res = await instance.get(`https://sminiplay.imbc.com/aacplay.ashx?agent=webapp&channel=${mbc_ch[ch]}`);
-        return 'https://' + res.data.split('"https://')[1].split('"')[0];
-    } catch { return "invaild"; }
+        // MBC는 Referer 체크를 엄격하게 하므로 헤더를 보강해주는 것이 좋습니다.
+        const res = await instance.get(`https://sminiplay.imbc.com/aacplay.ashx?agent=webapp&channel=${mbc_ch[ch]}`, {
+            headers: {
+                'Referer': 'https://mini.imbc.com/',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
+        });
+
+        // 정규식으로 https://...m3u8 또는 https://...aac 주소를 안전하게 추출
+        const match = res.data.match(/"(https?:\/\/[^"]+)"/);
+        
+        if (match && match[1]) {
+            console.log(`[MBC] Found URL: ${match[1]}`);
+            return match[1];
+        } else {
+            console.log(`[MBC] URL not found in response: ${res.data.substring(0, 100)}`);
+            return "invaild";
+        }
+    } catch (e) { 
+        console.error(`[MBC Error] ${e.message}`);
+        return "invaild"; 
+    }
 }
 
 async function getsbs(ch) {
@@ -194,4 +213,5 @@ async function getsbs(ch) {
 }
 
 liveServer.listen(port, '0.0.0.0', () => console.log(`Korea Radio Server running on port ${port}`));
+
 
