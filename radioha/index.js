@@ -190,31 +190,36 @@ async function getkbs(param) {
 async function getmbc(ch) {
     const mbc_ch = { 'mbc_fm4u': 'mfm', 'mbc_fm': 'sfm' };
     try {
-        // MBC는 agent=webapp 파라미터와 정확한 Referer를 요구합니다.
         const res = await instance.get(`https://sminiplay.imbc.com/aacplay.ashx?agent=webapp&channel=${mbc_ch[ch]}`, {
             headers: {
                 'Referer': 'https://mini.imbc.com/',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': '*/*'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             }
         });
 
-        // 응답 내용에서 "https://...m3u8" 또는 "https://...aac" 형태를 정규식으로 추출
-        // 주소에 토큰 정보 등이 포함되어 길게 나오므로 이 방식이 가장 안전합니다.
-        const match = res.data.match(/"(https?:\/\/[^"]+)"/);
+        // 로그를 보니 따옴표 없이 주소만 오거나, 주소 뒤에 다른 텍스트가 붙어 있을 수 있습니다.
+        // http 또는 https로 시작하는 모든 연속된 문자열을 가져옵니다.
+        const match = res.data.match(/(https?:\/\/[^\s"<>]+)/);
         
         if (match && match[1]) {
-            console.log(`[MBC] Success: ${match[1].split('?')[0]}...`); // 로그에는 주소 앞부분만 출력
-            return match[1];
+            // 주소 끝에 불필요한 공백이나 문자가 붙는 것 방지
+            const streamUrl = match[1].trim();
+            console.log(`[MBC] Success! Found URL: ${streamUrl}`);
+            return streamUrl;
         } else {
-            console.error(`[MBC] Parsing Failed. Response: ${res.data.substring(0, 100)}`);
+            // 만약 정규식으로도 실패하면, 데이터 전체가 주소일 가능성이 크므로 그대로 반환 시도
+            if (res.data.includes('http')) {
+                const rawUrl = res.data.trim();
+                console.log(`[MBC] Direct URL mapping: ${rawUrl}`);
+                return rawUrl;
+            }
+            console.error(`[MBC] Really Failed. Data: ${res.data}`);
             return "invaild";
         }
     } catch (e) { 
         console.error(`[MBC Error] ${e.message}`);
         return "invaild"; 
     }
-}
 }
 
 async function getsbs(ch) {
@@ -226,6 +231,7 @@ async function getsbs(ch) {
 }
 
 liveServer.listen(port, '0.0.0.0', () => console.log(`Korea Radio Server running on port ${port}`));
+
 
 
 
