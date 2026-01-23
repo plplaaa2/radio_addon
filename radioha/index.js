@@ -21,7 +21,8 @@ function return_pipe(urls, resp, req) {
 
     // 2. FFmpeg 실행 (AAC 코덱 + 데이터 절약 설정)
     const xffmpeg = child_process.spawn("ffmpeg", [
-        "-headers", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "-protocol_whitelist", "file,http,https,tcp,tls,crypto",
+        "-headers", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\r\nReferer: https://wbsradio.kr/\r\n",
         "-re", 
         "-fflags", "+genpts",
         "-i", urls,
@@ -232,6 +233,7 @@ async function getsbs(ch) {
 }
 
 liveServer.listen(port, '0.0.0.0', () => console.log(`Korea Radio Server running on port ${port}`));
+
 
 
 
