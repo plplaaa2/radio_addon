@@ -91,13 +91,10 @@ const liveServer = http.createServer((req, resp) => {
                         document.querySelectorAll('.channel-btn').forEach(btn => btn.classList.remove('active'));
                         event.target.classList.add('active');
                         
-                        const streamUrl = "/radio?token=${mytoken}&keys=" + key;
+                        const streamUrl = "radio?token=${mytoken}&keys=" + key;
                         status.innerText = "재생 중: " + key.toUpperCase();
                         audio.src = streamUrl;
-                        audio.play().catch(e => {
-                            console.error("Autoplay blocked:", e);
-                            status.innerText = "재생 버튼을 눌러주세요: " + key;
-                        });
+                        audio.play();
                     }
                 </script>
             </body>
@@ -163,5 +160,6 @@ async function getsbs(ch) {
 }
 
 liveServer.listen(port, '0.0.0.0', () => console.log(`Korea Radio Server running on port ${port}`));
+
 
 
