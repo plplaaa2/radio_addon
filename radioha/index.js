@@ -40,9 +40,8 @@ function return_pipe(urls, resp, req, refererUrl = "https://mini.imbc.com/") {
         "-ac", "2",
         "-ar", "44100",
         "-af", "aresample=async=1", 
-        "-fflags", "+genpts+discardcorrupt+nobuffer",
-        "-flush_packets", "1",
-        "-movflags", "frag_keyframe+empty_moov+default_base_moof",
+        "-fflags", "+genpts+discardcorrupt", 
+        "-movflags", "frag_keyframe+empty_moov", 
         "-f", "adts",
         "pipe:1"
     ];
@@ -241,6 +240,7 @@ async function getsbs(ch) {
 }
 
 liveServer.listen(port, '0.0.0.0', () => console.log(`Korea Radio Server running on port ${port}`));
+
 
 
 
