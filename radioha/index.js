@@ -28,7 +28,7 @@ function return_pipe(urls, resp, req, refererUrl = "https://mini.imbc.com/") {
         "-loglevel", "error",
         "-protocol_whitelist", "file,http,https,tcp,tls,crypto",
         "-headers", `User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\r\nReferer: ${refererUrl}\r\n`,
-        "-probesize", "65536",
+        "-probesize", "131072",
         //"-analyzeduration", "500000",
         "-reconnect", "1",
         "-reconnect_at_eof", "1",
@@ -241,6 +241,7 @@ async function getsbs(ch) {
 }
 
 liveServer.listen(port, '0.0.0.0', () => console.log(`Korea Radio Server running on port ${port}`));
+
 
 
 
