@@ -45,13 +45,14 @@ function return_pipe(urls, resp, req, refererUrl = "https://mini.imbc.com/") {
 
     const xffmpeg = child_process.spawn("ffmpeg", ffmpegArgs);
 
-    // 응답 헤더: 연결 유지 및 캐시 방지 설정 
+// 응답 헤더 최적화
     resp.writeHead(200, { 
-        'Content-Type': 'audio/aac',
+        'Content-Type': 'audio/aac', // 또는 'audio/x-aac'
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache',
         'Expires': '0',
-        'Connection': 'keep-alive' 
+        'Connection': 'keep-alive',
+        'X-Content-Type-Options': 'nosniff' // 브라우저가 MIME 타입을 추측하지 않게 함
     });
 
     xffmpeg.stdout.pipe(resp);
@@ -226,3 +227,4 @@ async function getsbs(ch) {
 }
 
 liveServer.listen(port, '0.0.0.0', () => console.log(`Korea Radio Server running on port ${port}`));
+
