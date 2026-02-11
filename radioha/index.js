@@ -3,46 +3,62 @@ const atype_list = [256, 192, 128, 96, 48];
 const atype_names = ["256k (고음질)", "192k (표준)", "128k (절약)", "96k (낮음)", "48k (터널용)"];
 const mytoken = 'homeassistant'; 
 const http = require('http');
-const url = require("url");
+const { URL } = require('url'); // [추가] WHATWG URL API 
 const child_process = require("child_process");
 const fs = require('fs');
 const axios = require('axios');
 
-// 라디오 리스트 로드
+// 라디오 리스트 로드 
 const data = JSON.parse(fs.readFileSync('/app/radio-list.json', 'utf8'));
 const instance = axios.create({ timeout: 5000 });
 
 function return_pipe(urls, resp, req, refererUrl = "https://mini.imbc.com/") {
-    const urlParts = url.parse(req.url, true);
+    // 1. URL 파싱 방식 변경 (경고 해결 및 쿼리 추출) 
+    const protocol = req.headers['x-forwarded-proto'] || 'http';
+    const fullUrl = new URL(req.url, `${protocol}://${req.headers.host}`);
     
-    // 1. 음질 인덱스 결정 (파라미터 없으면 기본값 2 = 128k / atype_names[2] = '절약')
-    const atype = urlParts.query["atype"] !== undefined ? Number(urlParts.query["atype"]) : 2;
+    const atypeStr = fullUrl.searchParams.get("atype");
+    const atype = atypeStr !== null ? Number(atypeStr) : 2;
     const bitrate = atype_list[atype] || 128;
 
-    // 2. FFmpeg 실행 (AAC 코덱 + 데이터 절약 설정)
-    const xffmpeg = child_process.spawn("ffmpeg", [
+    // 2. FFmpeg 실행 옵션 최적화 (HLS 끊김 방지) 
+    const ffmpegArgs = [
+        "-loglevel", "error", 
         "-protocol_whitelist", "file,http,https,tcp,tls,crypto",
         "-headers", `User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\r\nReferer: ${refererUrl}\r\n`,
-        "-re", 
-        "-fflags", "+genpts",
+        "-reconnect", "1",           // [추가] 연결 끊김 시 재시도
+        "-reconnect_streamed", "1",  // [추가] 스트림 재연결
+        "-reconnect_delay_max", "5", // [추가] 최대 재연결 대기 시간
         "-i", urls,
-        "-c:a", "aac",           // 고효율 AAC 코덱
-        "-b:a", bitrate + "k",    // 선택된 비트레이트 (기본 128k)
-        "-ac", "2",              // 스테레오 유지
-        "-ar", "44100",          // 표준 샘플링 레이트
-        "-movflags", "frag_keyframe+empty_moov", // 스트리밍 필수 옵션
-        "-f", "adts",            // AAC 스트리밍 표준 포맷
+        "-c:a", "aac",
+        "-b:a", bitrate + "k",
+        "-ac", "2",
+        "-ar", "44100",
+        "-af", "aresample=async=1",   // [추가] 오디오 싱크 밀림 방지
+        "-fflags", "+genpts+discardcorrupt", // [추가] 손상된 패킷 무시 및 PTS 생성
+        "-movflags", "frag_keyframe+empty_moov",
+        "-f", "adts",
         "pipe:1"
-    ]);
+    ];
 
-    // 3. 응답 헤더 설정 (브라우저/앱 인식용)
-    resp.writeHead(200, { 'Content-Type': 'audio/aac' });
+    const xffmpeg = child_process.spawn("ffmpeg", ffmpegArgs);
+
+    // 3. 응답 헤더 최적화 (연결 유지) 
+    resp.writeHead(200, { 
+        'Content-Type': 'audio/aac',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive' 
+    });
+
     xffmpeg.stdout.pipe(resp);
 
-    // 4. 로그 출력 (보내주신 변수명 atype_list 사용)
-    console.log(`[Radio] AAC Stream Started: ${atype_list[atype]}k (PID: ${xffmpeg.pid})`);
+    console.log(`[Radio] AAC Stream Started: ${bitrate}k (PID: ${xffmpeg.pid})`);
 
-    // 5. 연결 종료 및 에러 처리
+    // FFmpeg 에러 로그 캡처
+    xffmpeg.stderr.on('data', (data) => {
+        console.error(`[FFmpeg STDERR] ${data}`);
+    });
+
     req.on("close", () => {
         if (xffmpeg) {
             console.log(`[Radio] Connection Closed (PID: ${xffmpeg.pid})`);
@@ -54,8 +70,13 @@ function return_pipe(urls, resp, req, refererUrl = "https://mini.imbc.com/") {
 }
 
 const liveServer = http.createServer((req, resp) => {
-    const urlParts = url.parse(req.url, true);
-    const { pathname, query } = urlParts;
+    // URL 분석 방식 통일 
+    const protocol = req.headers['x-forwarded-proto'] || 'http';
+    const fullUrl = new URL(req.url, `${protocol}://${req.headers.host}`);
+    const pathname = fullUrl.pathname;
+    const query = Object.fromEntries(fullUrl.searchParams);
+
+    // --- 이후 HTML 렌더링 및 방송사 파싱 로직은 기존과 동일하게 유지 ---
 
     // 1. Web UI 메인 화면
     if (pathname === "/") {
