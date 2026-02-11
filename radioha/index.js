@@ -28,7 +28,8 @@ function return_pipe(urls, resp, req, refererUrl = "https://mini.imbc.com/") {
         "-loglevel", "error",
         "-protocol_whitelist", "file,http,https,tcp,tls,crypto",
         "-headers", `User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\r\nReferer: ${refererUrl}\r\n`,
-        "-timeout", "10000000",
+        "-probesize", "131072",
+        //"-timeout", "10000000",
         "-reconnect", "1",
         "-reconnect_at_eof", "1",
         "-reconnect_streamed", "1",
@@ -63,9 +64,12 @@ function return_pipe(urls, resp, req, refererUrl = "https://mini.imbc.com/") {
 
     // 디버그를 위한 STDERR 로그 출력 
     xffmpeg.stderr.on('data', (data) => {
-        console.error(`[FFmpeg STDERR] PID ${xffmpeg.pid}: ${data}`);
+        const msg = data.toString();
+        // 무의미한 에러 외에 실제 접속 오류만 출력 
+        if (!msg.includes("failed to resolve hostname") || msg.includes("403 Forbidden")) {
+            console.error(`[FFmpeg STDERR] ${msg}`);
+        }
     });
-
     req.on("close", () => {
         if (xffmpeg) {
             console.log(`[Radio] Connection Closed (PID: ${xffmpeg.pid})`);
@@ -236,5 +240,6 @@ async function getsbs(ch) {
 }
 
 liveServer.listen(port, '0.0.0.0', () => console.log(`Korea Radio Server running on port ${port}`));
+
 
 
