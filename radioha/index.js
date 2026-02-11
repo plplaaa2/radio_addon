@@ -28,7 +28,9 @@ function return_pipe(urls, resp, req, refererUrl = "https://mini.imbc.com/") {
         "-loglevel", "error",
         "-protocol_whitelist", "file,http,https,tcp,tls,crypto",
         "-headers", `User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\r\nReferer: ${refererUrl}\r\n`,
+        "-timeout", "10000000",
         "-reconnect", "1",
+        "-reconnect_at_eof", "1",
         "-reconnect_streamed", "1",
         "-reconnect_delay_max", "5",
         "-i", urls,
@@ -139,12 +141,19 @@ const liveServer = http.createServer((req, resp) => {
                         btns.forEach(b => { if(b.innerText.toLowerCase() === key.toLowerCase()) b.classList.add('active'); });
                         
                         const atype = quality.value;
-                        const streamUrl = "radio?token=${mytoken}&keys=" + key + "&atype=" + atype;
+                        const streamUrl = "radio?token=${mytoken}&keys=" + key + "&atype=" + atype + "&t=" + Date.now();
                         const qText = quality.options[quality.selectedIndex].text;
                         status.innerText = "재생 중: " + key.toUpperCase() + " [" + qText + "]";
                         audio.src = streamUrl;
                         audio.play().catch(e => console.error("Playback failed", e));
                     }
+                    audio.onerror = () => {
+                       if(currentKey) {
+                           console.log("스트림 중단됨. 재연결 시도...");
+                           status.innerText = "연결 끊김. 재시도 중...";
+                           setTimeout(() => play(currentKey), 3000);
+                       }
+                    };
                     quality.onchange = () => { if(currentKey) play(currentKey); };
                 </script>
             </body>
@@ -227,4 +236,5 @@ async function getsbs(ch) {
 }
 
 liveServer.listen(port, '0.0.0.0', () => console.log(`Korea Radio Server running on port ${port}`));
+
 
